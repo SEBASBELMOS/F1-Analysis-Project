@@ -1,25 +1,34 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
-import plotly.express as px
 
 # Title
-st.title("🏎️ Formula 1 Lap Time Analysis Dashboard")
+st.title("Formula 1 Lap Time Analysis Dashboard")
 
-# Load data
+# Load and clean data
 @st.cache_data
 def load_data():
     df = pd.read_csv("data/monza_2023_laps.csv")
 
-    # Clean time-related columns
-    time_columns = ['Sector3Time', 'Sector1SessionTime', 'Sector2SessionTime', 'Sector3SessionTime']
+    # Function to convert time strings to seconds
+    def time_to_seconds(column):
+        return pd.to_timedelta(column, errors='coerce').dt.total_seconds()
 
+    # Clean time-related columns
+    time_columns = ['LapTime', 'Sector1Time', 'Sector2Time', 'Sector3Time']
     for col in time_columns:
         if col in df.columns:
-            df[col] = pd.to_timedelta(df[col], errors='coerce').dt.total_seconds()
+            df[col] = time_to_seconds(df[col])
+
+    # Ensure LapNumber and Position are numeric
+    df['LapNumber'] = pd.to_numeric(df['LapNumber'], errors='coerce')
+    df['Position'] = pd.to_numeric(df['Position'], errors='coerce')
+
+    # Drop rows with missing LapTime, LapNumber, or Driver
+    df = df.dropna(subset=['LapTime', 'LapNumber', 'Driver'])
 
     return df
 
+# Load cleaned data
 df = load_data()
 
 # Sidebar filters
@@ -29,30 +38,15 @@ selected_driver = st.sidebar.selectbox("Select a Driver:", drivers)
 
 # Filtered data
 filtered_df = df[df['Driver'] == selected_driver]
+
+# Display filtered data
 st.write(f"### Data for Driver: {selected_driver}")
 st.dataframe(filtered_df)
 
-# Line chart for lap times
+# Line chart for Lap Times
 st.write("### Lap Time Trend")
-fig, ax = plt.subplots()
-ax.plot(filtered_df['LapNumber'], filtered_df['LapTime'], marker='o', linestyle='-', label=selected_driver)
-ax.set_xlabel("Lap Number")
-ax.set_ylabel("Lap Time (s)")
-ax.set_title(f"Lap Times for {selected_driver}")
-ax.legend()
-st.pyplot(fig)
+st.line_chart(filtered_df[['LapNumber', 'LapTime']].set_index('LapNumber'))
 
 # Summary statistics
 st.write("### Summary Statistics")
 st.write(filtered_df.describe())
-
-# Interactive scatter plot
-st.write("### Sector Times vs Lap Number")
-fig = px.scatter(
-    filtered_df, 
-    x='LapNumber', 
-    y='Sector3Time', 
-    title=f"Sector 3 Times for {selected_driver} (in Seconds)",
-    labels={'Sector3Time': 'Sector 3 Time (s)'}
-)
-st.plotly_chart(fig)
