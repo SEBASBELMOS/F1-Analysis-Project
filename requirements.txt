@@ -1,0 +1,11 @@
+pandas
+numpy
+matplotlib
+seaborn
+fastf1
+plotly
+dash
+streamlit
+scipy
+scikit-learn
+jupyterlab
