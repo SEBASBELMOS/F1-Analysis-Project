@@ -1,52 +1,49 @@
 import streamlit as st
 import pandas as pd
 
+# Load the cleaned data
+@st.cache_data
+def load_data():
+    return pd.read_csv("data/monza_2023_laps_cleaned.csv")
+
+df = load_data()
+
 # Title
 st.title("Formula 1 Lap Time Analysis Dashboard")
 
-# Load and clean data
-@st.cache_data
-def load_data():
-    df = pd.read_csv("data/monza_2023_laps.csv")
-
-    # Function to convert time strings to seconds
-    def time_to_seconds(column):
-        return pd.to_timedelta(column, errors='coerce').dt.total_seconds()
-
-    # Clean time-related columns
-    time_columns = ['LapTime', 'Sector1Time', 'Sector2Time', 'Sector3Time']
-    for col in time_columns:
-        if col in df.columns:
-            df[col] = time_to_seconds(df[col])
-
-    # Ensure LapNumber and Position are numeric
-    df['LapNumber'] = pd.to_numeric(df['LapNumber'], errors='coerce')
-    df['Position'] = pd.to_numeric(df['Position'], errors='coerce')
-
-    # Drop rows with missing LapTime, LapNumber, or Driver
-    df = df.dropna(subset=['LapTime', 'LapNumber', 'Driver'])
-
-    return df
-
-# Load cleaned data
-df = load_data()
-
-# Sidebar filters
+# Sidebar: Select Driver
 st.sidebar.header("Filter Data")
 drivers = df['Driver'].unique()
 selected_driver = st.sidebar.selectbox("Select a Driver:", drivers)
 
-# Filtered data
-filtered_df = df[df['Driver'] == selected_driver]
+# Fastest Lap
+st.write("### Fastest Lap for Each Driver")
+fastest_laps = df.groupby('Driver')['LapTime'].min().reset_index()
+st.dataframe(fastest_laps)
 
-# Display filtered data
-st.write(f"### Data for Driver: {selected_driver}")
-st.dataframe(filtered_df)
+# Highlight Fastest Lap for Selected Driver
+st.write(f"### Fastest Lap for {selected_driver}")
+fastest_lap = df[df['Driver'] == selected_driver]['LapTime'].min()
+st.write(f"**{selected_driver}**'s fastest lap time: {fastest_lap:.2f} seconds")
 
-# Line chart for Lap Times
-st.write("### Lap Time Trend")
-st.line_chart(filtered_df[['LapNumber', 'LapTime']].set_index('LapNumber'))
+import matplotlib.pyplot as plt
 
-# Summary statistics
-st.write("### Summary Statistics")
-st.write(filtered_df.describe())
+# Lap Time Trend
+st.write(f"### Lap Time Trend for {selected_driver}")
+driver_data = df[df['Driver'] == selected_driver]
+
+fig, ax = plt.subplots()
+ax.plot(driver_data['LapNumber'], driver_data['LapTime'], marker='o', linestyle='-')
+ax.set_xlabel("Lap Number")
+ax.set_ylabel("Lap Time (seconds)")
+ax.set_title(f"Lap Time Trend for {selected_driver}")
+st.pyplot(fig)
+
+# Average Sector Times
+st.write("### Average Sector Times for Drivers")
+sector_times = df.groupby('Driver')[['Sector1Time', 'Sector2Time', 'Sector3Time']].mean().reset_index()
+st.dataframe(sector_times)
+
+# Bar Chart for Sector Times
+st.write("### Sector Times Comparison")
+st.bar_chart(sector_times.set_index('Driver'))
