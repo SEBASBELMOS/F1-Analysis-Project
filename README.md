@@ -113,6 +113,6 @@ This project is not yet finished. I am currently learning more about the technic
 ---
 
 ## **Author**  
-Created by **Sebastian Belalcazar Mosquera**. Connect with me on [LinkedIn](#) for feedback, suggestions, or collaboration opportunities!
+Created by **Sebastian Belalcazar Mosquera**. Connect with me on [LinkedIn](https://www.linkedin.com/in/sebasbelmos/) for feedback, suggestions, or collaboration opportunities!
 
 ---
